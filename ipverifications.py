@@ -1,5 +1,6 @@
 import ipaddress
 import sys
+import re
 
 #Function to Validate if the IP is a valid UNICAST IP address, returns True or False.
 def subnet_validator(sourceip,destip,mask):
@@ -51,6 +52,28 @@ def subnetvalidation(subnet,mask):
         sys.exit("Subnet IP is reserved 240.0.0.0/8, unsupported flow")
     return (network)
 
+
+def inside_subnet(subnetstring, inputip):
+    if subnetstring=="0.0.0.0/0":
+        sys.exit("Using a default route can result in profiling all devices in Cisco DNA Center, please do not use it")
+    network = ipaddress.IPv4Network(subnetstring, strict=False)
+    validation = ipaddress.ip_address(inputip) in ipaddress.ip_network(network)
+    return (validation)
+
+
+def stringvalidator(subnetstring):
+    list_of_subnets = []
+    ipr = re.compile(r'(?:(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.){3}(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?/\d{1,2})')
+
+
+    ips = ipr.findall(subnetstring)
+    for i,ips in enumerate(ips):
+        pair = ips.split("/")
+        subnet = pair[0]
+        mask = pair[1]
+        verifiedsubnet =  (subnetvalidation(subnet,mask))
+        list_of_subnets.append(verifiedsubnet)
+    return (list_of_subnets)
 
 #Function to Validate if the IP is a valid IP address (any type) for input process
 def ip_validator_input (ip_type: str):

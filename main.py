@@ -13,9 +13,9 @@ from radkit_client.sync import (
 )
 
 def startup():
-    email = "your_mail"
+    email = "jalejand@cisco.com"
     domain = "PROD"
-    string = "your_string"
+    string = "qzjr-mk34-gk8c"
     service = radkit_cli.radkit_login(email,domain,string)
     return (service)
 
@@ -34,9 +34,10 @@ def initial_setup():
     #Restrict it as much as possible.
     #mgmtsubnet = "172.12.0.0"
     #mask = "16"
-    validatedsubnet = ipverifications.subnetvalidation(mgmtsubnet,mask)
-    #devicelist = device_profiler.fabric_builder(validatedsubnet)
-    #devicelist.allmappings(service)
+    subnets = "172.12.0.0/16, 172.12.1.65/32"
+    validatedsubnet = ipverifications.stringvalidator(subnets)
+
+    devicelist = device_profiler.fabric_builder(validatedsubnet,service)
     #print (devicelist.fabric_list)
 
     #Profiling device where the Source is Located

@@ -175,31 +175,7 @@ class finddevice:
                 sys.exit("Device {} not in RADKIT inventory".format(self.mgmtip))
 
 #FabricSite based on management SUBNET/LANAUTO, all devices in the fabric must share a common subnet...
-class fabric_builder:
-
-    def __init__(self,subnet: str):
-        self.subnet = subnet
-
-    def allmappings(self, service):
-
-            #Fetch all "IOS" based devices.
-            try:
-                device_inventory = service.inventory
-            except (IndexError, ValueError):
-                sys.exit("Unable to fetch RADKIT inventory")
-
-            host_list = []
-            mgmt_list = []
-            for i in device_inventory:
-                hostname = device_inventory[i].name
-                device_type = device_inventory[i].device_type
-                mgmtip = device_inventory[i].host
-                if  ipaddress.ip_address(mgmtip) in ipaddress.ip_network(self.subnet):
-                    if device_type=="IOS":
-                        host_list.append(hostname)
-                        mgmt_list.append(mgmtip)
-            self.fabric_list = {}
-            dcounter = 0
-            for i,j in zip(host_list, mgmt_list):
-                self.fabric_list[dcounter] = { 'Host' : i, 'Mgmtip' : j}
-                dcounter+=1
+def fabric_builder(subnet,service):
+    fabric_list = {}
+    for currentsubnet in subnet:
+          

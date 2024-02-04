@@ -8,6 +8,7 @@ import ipverifications
 import device_profiler
 import hostonboarding
 import forwardinglogic
+import controlplane
 
 from radkit_client.sync import (
     create_context
@@ -22,6 +23,7 @@ def startup():
 
 def initial_setup():
 
+    """
     #Saved Variables for Faster Execution
     devicelist = {0: {'Name': 'fiab-lab2-virtualpod-mxc5-com', 'Host': '172.12.0.7', 'Type': 'IOS', 'Loopback0': '172.12.1.80'}, 1: {'Name': 'border2-virtualpod-mxc5-com', 'Host': '172.12.0.2', 'Type': 'IOS', 'Loopback0': '172.12.1.66'}, 2: {'Name': 'localcp-virtualpod-mxc5-com', 'Host': '172.12.0.30', 'Type': 'IOS', 'Loopback0': '172.12.1.123'}, 3: {'Name': 'edge1-virtualpod-mxc5-com', 'Host': '172.12.0.3', 'Type': 'IOS', 'Loopback0': '172.12.1.72'}, 4: {'Name': 'border1-virtualpod-mxc5-com', 'Host': '172.12.0.1', 'Type': 'IOS', 'Loopback0': '172.12.1.65'}, 5: {'Name': 'wlc-virtualpod-mxc5-com', 'Host': '172.12.1.252', 'Type': 'IOS', 'Loopback0': None}, 6: {'Name': 's1-border-virtualpod-mxc5-com', 'Host': '172.12.0.9', 'Type': 'IOS', 'Loopback0': '172.12.1.100'}, 7: {'Name': 'edge2-virtualpod-mxc5-com', 'Host': '172.12.0.4', 'Type': 'IOS', 'Loopback0': '172.12.1.73'}, 8: {'Name': 'fiab-lab3-virtualpod-mxc5-com', 'Host': '172.12.0.6', 'Type': 'IOS', 'Loopback0': '172.12.1.90'}, 9: {'Name': 'tcp-virtualpod-mxc5-com', 'Host': '172.12.0.100', 'Type': 'IOS', 'Loopback0': '172.12.0.100'}, 10: {'Name': 'border8kv-virtualpod-mxc5-com', 'Host': '172.12.1.101', 'Type': 'IOS', 'Loopback0': '172.12.1.101'}}
 
@@ -53,12 +55,25 @@ def initial_setup():
     print (sourceep.__dict__)
 
     #Flow Type Determination
-    results = forwardinglogic.flowelection(sourceep,destination_ip)
+    results = forwardinglogic.flowelection(sourceep,destination_ip)Mexico123!
     #Same Subnet Verification
+    """
 
-
-
-
+    """
+    Validations
+    #border = border1-pod2-com, ins 8190 5ce1.7629.0928
+    #""172.19.1.72", "5254.0000.c5c3", "8189", "control-plane-lastorder-com""
+    res = controlplane.cp_state("172.19.1.72", "5ce1.7629.0928", "8190", "border1-pod2-com")
+    res.l3_state(service)
+    print (res.__dict__)
+    #edge 1 edge1-pod2-com as ETR, 172.19.1.65 as queriedcpip
+    res = controlplane.cp_etr_state("172.19.1.65", "edge1-pod2-com")
+    res.session_state(service)
+    print (res.__dict__)
+    """
+    res = controlplane.route_recursion("172.12.1.80", "border1-virtualpod-mxc5-com")
+    res.rloc_data(service)  
+    print (res.__dict__)
 
 if __name__ == "__main__":
     with create_context():

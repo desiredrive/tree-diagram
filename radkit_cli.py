@@ -28,7 +28,10 @@ def get_any_single_output(hostname,command: str,service):
     try:
         device_inventory = service.inventory[hostname]
         commands = device_inventory.exec([command]).wait()
-        output = commands.result["{}".format(command)].data
+        try:
+            output = commands.result["{}".format(command)].data
+        except:
+            return None
     except ValueError:
         print ("Error when getting the following command: {}".format(commands))
     return output

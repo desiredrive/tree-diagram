@@ -46,7 +46,7 @@ class device:
     def profile_device(self, service):
         device.find_device(self,service)
 
-         #Define main IOS Commands
+        #Define main IOS Commands
         cmd1 = 'show ip interface loopback0 | i Internet|line'
         cmd2 = 'show version | i ptime'
         cmd3 = 'show lisp service ipv4 | i PITR|Map-Server|Map-Resolver|ETR'
@@ -167,10 +167,7 @@ class device:
             affinity = []
             loopbackstate = False
             for line in loopres.splitlines():
-
-                
                 if "IPv4-interface Loopback0" in line:
-                    print (line)
                     loopbackstate = True
                     if "priority" in line:
                         priority = re.compile("(?<=priority\s)[0-9]+").search(line).group().strip()

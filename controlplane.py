@@ -7,7 +7,42 @@ import sys
 from device_profiler import device, finddevice
 import radkit_cli
 
+def etherchannel_parse(service, intf, device):
 
+    #Returns physical interfaces ONLY in UP state
+    matches = ["#", "show"]
+    ponumb = re.compile( "\d+" ).search(intf).group().strip()
+    #L2 Definition:
+    po_cmd = "show etherchannel {} port | i Port:".format(ponumb)
+    po_op = radkit_cli.get_any_single_output(device, po_cmd, service)
+    pos_cmd ="show etherchannel {} port | i Port state".format(ponumb)
+    pos_op = radkit_cli.get_any_single_output(device, pos_cmd, service)
+    phy = []
+    state = []
+
+    for line in po_op.splitlines():
+        if "Port: " in line:
+            port = re.compile("(?:[A-Z][A-Za-z_-]*[a-z]|[A-Z])\s?\d+(?:\/\d+)*(?::\d+)?(?:\.\d+)?").search(line).group(0).strip()
+            phy.append(port)
+    print (pos_op)
+    for line in pos_op.splitlines():
+        if "state" in line:
+            if "Up" in line:
+                if "Suspend" in line:
+                        state.append ("Suspend")
+                elif "Wait" in line:
+                        state.append ("Waiting")
+                else:
+                        state.append("UP")
+            if "Down" in line:
+                state.append("Down")
+    print (phy)
+    print (state)
+    final = []
+    for i,j in zip(phy,state):
+        if j == "UP":
+            final.append(i)
+    return (final)
 
 class cp_eid:
 
@@ -332,7 +367,6 @@ class l2_map_cache:
         self.weight = None          #LISP weight
         self.encapiid = None        #For LISP Extranet 
 
-
 class l3_map_cache:
 
     def __init__(self,eid, iid, mctype):
@@ -352,8 +386,6 @@ class l3_map_cache:
         self.priority = None        #LISP priority
         self.weight = None          #LISP weight
         self.encapiid = None        #For LISP Extranet 
-
-        
 
 class route_recursion:
     def __init__(self,route,device):
@@ -391,7 +423,6 @@ class route_recursion:
         cef_op = commands1.result["{}".format(cef_cmd)].data
         reach_op = commands1.result["{}".format(reach_cmd)].data
         ping_op = commands1.result["{}".format(ping_cmd)].data
-
 
         #RLOC Reachability
         print("Determining Reachability Criteria")
@@ -439,15 +470,26 @@ class route_recursion:
                     nh.append(nhop)
             self.nexthop = nh
             if prc == None:
-                sys.exit("No Route to RLOC! Traffic will be Dropped")
+                sys.exit("No Route to RLOC! Traffic wil l be Dropped")
             
         #PHY Indentification
+            
+        #Current state supports the following Next Hop parsing form CEF: L3 Port-Channel, SVI and Physical.
+        #Support for Tunnel, Apphosting, VTI, LISP and NVE interfaces is not yet considered...
+
         print("Calculating Physical Interfaces")
         phys = []
         matches = ["#", "show"]
         for line in cef_op.splitlines():
             if "nexthop " in line:
-                if "Vlan" in line:
+                #Layer 3 Port-Channel as next hop
+                if "channel" in line:
+                    phy = re.compile("(?:[A-Z][A-Za-z_-]*[a-z]|[A-Z])\s?\d+(?:\/\d+)*(?::\d+)?(?:\.\d+)?").search(line).group(0).strip()
+                    po_phy = etherchannel_parse(service,phy,self.device)
+                    for i in po_phy:
+                        phys.append(i)
+                #SVI as next as hop
+                elif "Vlan" in line:
                     nh = re.compile("(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})").search(line).group().strip()
                     arp = "show ip arp {}".format(nh)
                     try:
@@ -464,9 +506,12 @@ class route_recursion:
                                 sys.exit("MAC not learned for ARP {}".format(nh))
                     for line in mac_op.splitlines():
                         if not any(x  in line for x in matches):
-                            phy = phy = re.compile("(?:[A-Z][A-Za-z_-]*[a-z]|[A-Z])\s?\d+(?:\/\d+)*(?::\d+)?(?:\.\d+)?").search(line).group(0).strip()
-                            phys.append(phy) 
-                            #Pending to automate etherchannel dissect....
+                            phy = re.compile("(?:[A-Z][A-Za-z_-]*[a-z]|[A-Z])\s?\d+(?:\/\d+)*(?::\d+)?(?:\.\d+)?").search(line).group(0).strip()
+                            if "Po" in phy:
+                                po_phy = etherchannel_parse(service,phy,self.device)
+                                for i in po_phy:
+                                    phys.append(i)
+                #Physical Interfaces 
                 else:
                     phy = re.compile("(?:[A-Z][A-Za-z_-]*[a-z]|[A-Z])\s?\d+(?:\/\d+)*(?::\d+)?(?:\.\d+)?").search(line).group().strip()
                     if "." in phy:
@@ -474,20 +519,80 @@ class route_recursion:
                         phy = subint[0]
                     phys.append(phy)
         self.phy = phys
+        if self.phy == "None":
+            sys.exit("Unable to find the outgoing physical interfaces for prefix {}, confirm the outgoing interface on the device itself.".format(self.route))
 
+        #MTU validation:
 
-        
+        mtus = []
+        for i in phys:
+            mtu_cmd = "show interface {} | i MTU".format(i)
+            mtu_op = radkit_cli.get_any_single_output(self.device, mtu_cmd, service)
+            for line in mtu_op.splitlines():
+                if "bytes" in line:
+                    mtu = re.compile("(?<=MTU).*(?=bytes)").search(line).group().strip()
+                    mtu = int(mtu)
+                    mtus.append(mtu)
+        mtus.sort()
+        mini = mtus[0]
+
+        print ("Testing RLOC-to-RLOC reachability with MTU size of {}".format(mini))
+        #Ping with and without MTU size
+        pingm_cmd = "ping {} source lo0 time 1 size {} df-bit".format(self.route, mini)
+        pingm_op = radkit_cli.get_any_single_output(self.device,pingm_cmd,service)
+
+        #Ping Validation
+
+        for line in ping_op.splitlines():
+            if "Success" in line:
+                percent = re.compile("(?<=is).*(?=percent)").search(line).group().strip()
+                self.ping_to_rloc = percent+"%"
+        for line in pingm_op.splitlines():
+            if "Success" in line:
+                percent = re.compile("(?<=is).*(?=percent)").search(line).group().strip()
+                self.mtu_validation = ["{} %".format(percent), "MTU {}".format(mini)]
 
 class underlay_validations:
-    def __init__(self,rloc):
+    def __init__(self,intf,devicename):
+        self.device = devicename
+        self.intfname = intf 
         self.outputdrops = None
         self.iqdrops = None
         self.txload = None 
         self.rxload = None
         self.crcs = None
         self.giants = None 
-        self.ipps = None 
-        self.opps = None
+        self.inputpps = None 
+        self.outputpps = None
+    
+    def intf_parse(self, service):
+        intf_cmd = "show interface {}".format(self.intfname)
+        intf_op = radkit_cli.get_any_single_output(self.device,intf_cmd,service)
+
+        for line in intf_op.splitlines():
+            if "output drops" in line:
+                self.outputdrops = re.compile("(?<=drops:).*").search(line).group().strip()
+                iqdrops = re.compile("[\/]\d+[\/]\d+").search(line).group().strip()
+                iqdrops = iqdrops.split("/")
+                self.iqdrops = iqdrops[2]
+            if "tx" in line:
+                self.txload = re.compile("(?<=txload).*(?=,)").search(line).group().strip()
+                self.rxload = re.compile("(?<=rxload).*(?=)").search(line).group().strip()
+            if "CRC" in line:
+                self.crcs = re.compile("(?<=,).*(?=CRC)").search(line).group().strip()
+            if "giants" in line:
+                self.giants = re.compile("(?<=,).*(?=giants)").search(line).group().strip()
+            if "t rate" in line:
+                if "input" in line:
+                    try:
+                        self.inputpps = re.compile("(?<=,).*(?=packet)").search(line).group().strip()
+                    except:
+                        pass
+                if "output" in line:
+                    try:
+                        self.outputpps = re.compile("(?<=,).*(?=packet)").search(line).group().strip()
+                    except:
+                        pass               
 
 class neighbor_discovery:
     #Optional discovery, as it requires CDP...

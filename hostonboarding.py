@@ -186,3 +186,9 @@ class endpoint_info:
 
 
         #Loopback verification RLOC, priority, wight and priority and affinity
+        rlocintf = xtr.rlocdef['Interface']
+        if rlocintf != "Lo0":
+            sys.exit("Endpoint is on an XTR with no RLOC interface!, verify RLOC configuration")
+        else:
+            self.rloc = xtr.loopback
+        

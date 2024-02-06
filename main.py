@@ -61,7 +61,7 @@ def initial_setup():
     l3cps = []
     for i in devicelist:
         lo0 = devicelist[i]['Loopback0']
-        mgmt = devicelist[i]['Host']
+        mgmt = devicelist[i]['Name']
         try:
             if  any(x in lo0 for x in l2cp_list):
                 l2cps.append(mgmt)
@@ -69,12 +69,13 @@ def initial_setup():
                 l3cps.append(mgmt)
         except:
             pass
-    print (l2cps)
-    print (l3cps)
 
     #Flow Type Determination
-    #results = forwardinglogic.flowelection(sourceep,destination_ip
+    result = forwardinglogic.flowelection(sourceep,destination_ip)
     #Same Subnet Verification
+    if result == "L2EW":
+        start = forwardinglogic.switchingflow(sourceep,destination_ip,service,l2cps)
+        
    
 
     """

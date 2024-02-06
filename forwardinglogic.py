@@ -19,30 +19,29 @@ Are source and destination in the same subnet? If Yes:
         if Flood ARPnd disabled : L2MAC and L2AR are mandatory
         if Flood ARPnd enabled: L2MAC is mandatory, L2AR is relaxed
 '''
-def flowelection(epinfo, dstip, service, devicelist):
+def flowelection(epinfo, dstip):
     issamesubnet=ipverifications.subnet_validator(epinfo.sourceip,dstip,epinfo.mask)
     print (epinfo.sourceip)
     if issamesubnet==False:
         print ("Devices in different Subnet, Routing Flow")
     if issamesubnet==True:
         print ("Devices in the same Subnet, Switching Flow")
-        result = switchingflow(epinfo,dstip,service)
+        return ("L2EW")
 
-def switchingflow(epinfo, dstip, service):
+def switchingflow(epinfo, dstip, service, l2cps):
     l2onlystate = epinfo.isl2only
     floodarp = epinfo.arpflood
 
     iid = epinfo.l2lispiid
-    cps = epinfo.l2cps
 
     #Step 1 : LISP AR Request, find destination MAC:
     ar_res = []
-    for i in cps:
+    for i in l2cps:
         queriedcp = i
         ar_q = controlplane.cp_eid(dstip,iid,queriedcp)
-        ar_q.ethernet_q(service)
+        ar_q.address_q(service)
         ar_res.append(ar_q)
     
     for i in ar_res:
         print (i.__dict__)
-
+        

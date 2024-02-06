@@ -129,7 +129,7 @@ class cp_eid:
             self.etrs = etr_list
 
     #Layer 2 (Address Resolution) Control Plane Query
-    def addres_q(self, service):
+    def address_q(self, service):
             etr_list = []
             cmd = "sh lisp instance-id {} ethernet server address-resolution {}".format(self.iid, self.eid)
             cp_server_output = radkit_cli.get_any_single_output(self.queriedcp,cmd,service)

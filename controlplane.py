@@ -53,6 +53,7 @@ class cp_eid:
         self.etrs = None    #List of ETRs registering this EID
         self.protocol = "UDP" #Was this registered using UDP or TCP?
         self.isfewap = None #Is this EID an AP Radio MAC? True or False
+        self.wlcip = None    #IP of the WLC if any
         self.regbywlc = None #Is this EID registered by a WLC? True or False? If so, whats the WLC IP?
         self.domainid = None #Domain ID for this registration
         self.multidomain =  None #Multihoming ID for this registration
@@ -61,6 +62,16 @@ class cp_eid:
 
     #Layer 2 (MAC) Control Plane Query
     def ethernet_q(self, service):
+
+        wlc_cmd = "show run | se set WLC"
+        wlc_op = radkit_cli.get_any_single_output(self.queriedcp,wlc_cmd,service)
+        wlcs = []
+        wlc_match = ['locator-set', 'WLC', '#']
+        for line in wlc_op.splitlines():
+            if not any(x  in line for x in wlc_match):
+                wlcs.append(line.strip())
+        self.wlcip = wlcs
+
         etr_list = []
         cmd = "sh lisp instance-id {} ethernet server {}".format(self.iid, self.eid)
         cp_server_output = radkit_cli.get_any_single_output(self.queriedcp,cmd,service)
@@ -535,7 +546,7 @@ class route_recursion:
                     mtus.append(mtu)
         mtus.sort()
         mini = mtus[0]
-
+        self.mtu = mini
         print ("Testing RLOC-to-RLOC reachability with MTU size of {}".format(mini))
         #Ping with and without MTU size
         pingm_cmd = "ping {} source lo0 time 1 size {} df-bit".format(self.route, mini)
@@ -546,11 +557,11 @@ class route_recursion:
         for line in ping_op.splitlines():
             if "Success" in line:
                 percent = re.compile("(?<=is).*(?=percent)").search(line).group().strip()
-                self.ping_to_rloc = percent+"%"
+                self.ping_to_rloc = percent
         for line in pingm_op.splitlines():
             if "Success" in line:
                 percent = re.compile("(?<=is).*(?=percent)").search(line).group().strip()
-                self.mtu_validation = ["{} %".format(percent), "MTU {}".format(mini)]
+                self.mtu_validation = [percent, "MTU {}".format(mini)]
 
 class underlay_validations:
     def __init__(self,intf,devicename):

@@ -8,7 +8,6 @@ import ipverifications
 import device_profiler
 import hostonboarding
 import forwardinglogic
-#import controlplane
 
 from radkit_client.sync import (
     create_context
@@ -43,13 +42,13 @@ def initial_setup():
     #devicelist = device_profiler.fabric_builder(validatedsubnet,service)
 
     #Profiling device where the Source is Located
-    print ("Profiling device where the Source is Located...")
+    print ("Profiling device where the Source is located...")
     xtr = device_profiler.device(device_source_ip)
     xtr.profile_device(service)
     print (xtr.__dict__)
 
     #Gathering information about the source...
-    print ("Gathering information about the source...")
+    print ("Gathering information about the source endpoint...")
     sourceep = hostonboarding.endpoint_info(endpoint_ip)
     sourceep.host_onboarding_validation(xtr,service)
     print (sourceep.__dict__)
@@ -73,10 +72,25 @@ def initial_setup():
     #Flow Type Determination
     result = forwardinglogic.flowelection(sourceep,destination_ip)
     #Same Subnet Verification
-    if result == "L2EW":
-        start = forwardinglogic.switchingflow(sourceep,destination_ip,service,l2cps)
+    if result == "L2":
+        l2_flow = forwardinglogic.switchingflow(sourceep,destination_ip,service,l2cps)
+        dest_mac = l2_flow[0]
+        dest_rloc = l2_flow[1]
+        src_rloc = sourceep.rloc
+
+        #Intra-XTR L2 Local Execution:
+        if sourceep.rloc == dest_rloc:
+            print ("Host {} and {} are in the same XTR {}, performing local checks".format(endpoint_ip,destination_ip,dest_rloc))
         
-   
+        #Inter-XTR L2 East West Execution.1
+        else:
+            print ("Host {} is in RLOC {} and Host {} is in RLOC {}".format(endpoint_ip, src_rloc, destination_ip,dest_rloc))
+            for i in devicelist:
+                lo0 = devicelist[i]['Loopback0']
+                if lo0 == dest_rloc:
+                    mgmt = devicelist[i]['Host']
+            forwardinglogic.l2_east_west(xtr.hostname,sourceep.l2lispiid,dest_mac,dest_rloc,destination_ip,mgmt,service)
+            
 
     """
     Validations

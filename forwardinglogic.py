@@ -158,13 +158,11 @@ def l2_east_west(srcdevice, iid, dstmac, rloc, dstip, rmtdevice, service):
 def switchingflow(epinfo, dstip, service, l2cps):
     l2onlystate = epinfo.isl2only
     floodarp = epinfo.arpflood
-
     iid = epinfo.l2lispiid
 
     #Step 1 : LISP AR Request, find destination MAC:
     
     mac = ar_relay_resolution(dstip, iid, l2cps, service)
-    
 
     #Step 2: LISP L2 MAC Request, find the MAC RLOC:
 

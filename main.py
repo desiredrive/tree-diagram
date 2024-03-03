@@ -29,7 +29,7 @@ def initial_setup():
     #device_source_ip = ipverifications.ip_validator_input("Inventory Management IP address of Source Fabric Device (Edge or L2 Border) > ")
     device_source_ip = "172.12.0.3"
     #endpoint_ip = ip_parser("Endpoint source IP >")
-    endpoint_ip = "172.12.10.6"
+    endpoint_ip = "172.12.10.7"
     #destination_ip = ip_parser("Destination IP >")
     destination_ip = "172.12.10.123"
 

@@ -25,7 +25,7 @@ class endpoint_info:
         self.l3dynstate = False
         self.l3lispdbstate = False
         self.l2dynstate = False
-        self.l2lispdbstate = False
+        self.l2lispdbstate = False 
         self.l2cps = [] 
         self.l3cps = []
         self.sgt = 0
@@ -179,7 +179,7 @@ class endpoint_info:
                 if "RBAC" in line:
                     self.sourcesgt = re.compile("(?<=SGT).*(?=S)").search(line).group().strip()
         if self.isl2only==True:
-            sgt_cmd = "show ip cef {} | i SGT internal".format(self.sourceip)
+            sgt_cmd = "show ip cef {} internal | i SGT".format(self.sourceip)
             sgt_output = radkit_cli.get_any_single_output(hostname,sgt_cmd,service)
             for line in sgt_output.splitlines():
                 if "RBAC" in line:

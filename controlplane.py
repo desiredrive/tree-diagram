@@ -24,7 +24,6 @@ def etherchannel_parse(service, intf, device):
         if "Port: " in line:
             port = re.compile("(?:[A-Z][A-Za-z_-]*[a-z]|[A-Z])\s?\d+(?:\/\d+)*(?::\d+)?(?:\.\d+)?").search(line).group(0).strip()
             phy.append(port)
-    print (pos_op)
     for line in pos_op.splitlines():
         if "state" in line:
             if "Up" in line:
@@ -36,8 +35,6 @@ def etherchannel_parse(service, intf, device):
                         state.append("UP")
             if "Down" in line:
                 state.append("Down")
-    print (phy)
-    print (state)
     final = []
     for i,j in zip(phy,state):
         if j == "UP":
@@ -88,17 +85,6 @@ class cp_eid:
             if "sourced by reliable transport" in line:
                     self.protocol = "TCP"
 
-            if "Domain-ID" in line:
-                try:
-                    self.domainid = re.compile( "\d+" ).search(line).group().strip()
-                except:
-                    self.domainid = "unspecified"
-            if "Multihoming-ID" in line:
-                try:
-                    self.multidomain = re.compile( "\d+" ).search(line).group().strip()
-                except:
-                    self.multidomain = "unspecified"
-
             if "WLC AP bit:" in line:
                 self.regbywlc = "True" 
                 if "Set" in line:
@@ -109,7 +95,7 @@ class cp_eid:
         etrs_list = [i for i in etr_list if i not in wlc]
         if len(etrs_ list) != 1:
             sys.exit("Multiple RLOCs detected for this L2 Registration, triggering troubleshooting flow\n {}".format(etrs_list))
-        self.etrs = etr_list
+        self.etrs = etrs_list
 
     #Layer 3 (IPv4) Control Plane Query
     def layer3_q(self, service):
@@ -365,10 +351,106 @@ class cp_etr_state:
         #    except:
         #        pass
 
+class l3_map_cache:
+
+    def __init__(self,eid, iid, qtype, queriedev):
+        self.qtype = qtype       #Types: ipv4, ipv6 or ethernet
+        self.eid = eid              #Can be : IPv4, MAC address (IPv6 not needed for now)
+        self.iid = iid              #LISP Instance ID for the request
+        self.mask = None            #Mask for the EID
+        self.uptime = None          #Uptime of the map-cache
+        self.expiration = None      #Expiration 
+        self.source = None          #Via which method? Map-reply? Static? Publication?  
+        self.nmr = False             #Is it NMR? True or False
+        self.petr = None         #Is it sending to PETR? which PETRs? List of PETR and its states
+        self.rloc =None          #RLOC IP
+        #self.rlocstate = None       #What is the state, up, route-reject, admin-down, no-route? self?, list of RLOCs, dict
+        #self.priority = None        #LISP priority
+        #self.weight = None          #LISP weight
+        #self.encapiid = False        #For LISP Extranet 
+        self.queriedev = queriedev
+        
+    def l3map(self, service):
+
+            cmd = "sh lisp instance-id {} {} map-cache {}".format(self.iid, self.qtype, self.eid)
+            map_cache_output = radkit_cli.get_any_single_output(self.queriedev,cmd,service)
+            lpetr = []
+            locators = []
+            h=0
+            i = 0
+            j=0
+            encapiid1= None
+            encapiid2= None
+            
+            if map_cache_output == None:
+                sys.exit("EID not found in map-cache")
+
+            for line in map_cache_output.splitlines():
+                if "via" in line:
+                    self.mask = re.compile( "\/([0-9]+)" ).search(line).group().strip().replace("/","")
+                if "uptime" in line:
+                    self.uptime = re.compile( "(?<= uptime:)(.*?)(?=,)" ).search(line).group().strip()
+                if "expires" in line:
+                    self.expiration = re.compile( "(?<= expires:)(.*?)(?=,)" ).search(line).group().strip()
+                if ("forward-native" in line) or ("unknown-eid-forward" in line):
+                    self.nmr = True
+                if ("PETR" in line) or (h<=2 and h>=1):                     
+                    h+=1
+                    try:
+                        petr1 = re.compile("(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})").search(line).group().strip() 
+                        domain1 =  re.compile( "(?<=\s)(\d{7,10})(?=\/)").search(line).group().strip()
+                        multihoming1 = re.compile( "(?<=\/)(\d{4,6})(?=\s)").search(line).group().strip()
+                        dpetr = {"PETR": petr1, "Domain-ID": domain1, "Multihoming-ID": multihoming1}
+                        lpetr.append(dpetr) 
+                    except:
+                        pass                            
+                if "Sources:" in line:
+
+                    if self.nmr == True:
+                        self.source = re.compile( "(?<=Sources: )(.*)(?=,)" ).search(line).group().strip().replace(",","")
+                    else:
+                        self.source = re.compile( "(?<=Sources: )(.*)" ).search(line).group().strip().replace(",","")               
+                if ("Locator" in line) or i==1:
+                    i+=1
+                    try:
+                        rloc1 = re.compile( "(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})" ).search(line).group().strip()
+                        rlocstate1 = re.compile( "(?<=\s)[a-zA-Z]+" ).search(line).group().strip()
+                        priority1 = re.compile( "(?<=\s)(\d+)(?=\/)" ).search(line).group().strip()
+                        weight1 = re.compile( "\/([0-9]+)" ).search(line).group().strip().replace("/","")
+                        encapiid1 = re.compile( "(?<=\s)([1-9]|[1-9][0-9]|[1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])(?=\s)" ).search(line).group().strip() 
+                    except:
+                        pass
+                if ("Last RLOC-probe sent:" in line) or j==1:
+                    j+=1   
+                    try:
+                        rloc2 = re.compile( "(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})" ).search(line).group().strip()
+                        rlocstate2 = re.compile( "(?<=\s)[a-zA-Z]+" ).search(line).group().strip()
+                        priority2 = re.compile( "(?<=\s)(\d+)(?=\/)" ).search(line).group().strip()
+                        weight2 = re.compile( "\/([0-9]+)" ).search(line).group().strip().replace("/","")
+                        encapiid2 = re.compile( "(?<=\s)([1-9]|[1-9][0-9]|[1-9][0-9][0-9]|[1-9][0-9][0-9][0-9])(?=\s)" ).search(line).group().strip()
+                    except:
+                        pass
+            try:
+                self.petr = lpetr
+            except:
+                pass
+
+            try:
+                locator1 = {"RLOC": rloc1, "State": rlocstate1, "Priority": priority1, "Weight": weight1, "Extranet": encapiid1}
+                locators.append(locator1)
+            except:
+                pass  
+            
+            try:
+                locator1 = {"RLOC": rloc2, "State": rlocstate2, "Priority": priority2, "Weight": weight2, "Extranet": encapiid2}
+                locators.append(locator1)
+            except:
+                pass
+            self.rloc = locators
+                
 class l2_map_cache:
 
-    def __init__(self,eid, iid, mctype):
-        self.qtype = mctype         #Types: ipv4, ipv6 or ethernet
+    def __init__(self,eid, iid, queriedev):
         self.eid = eid              #Can be : IPv4, MAC address (IPv6 not needed for now)
         self.iid = iid              #LISP Instance ID for the request
         self.mask = None            #Mask of the EID, MAC addresses are /48 always
@@ -379,27 +461,40 @@ class l2_map_cache:
         self.rlocstate = None       #What is the state, up, route-reject, admin-down, no-route? self?, list of RLOCs, dict
         self.priority = None        #LISP priority
         self.weight = None          #LISP weight
-        self.encapiid = None        #For LISP Extranet 
+        self.queriedev = queriedev
 
-class l3_map_cache:
+    def l2map(self, service):
 
-    def __init__(self,eid, iid, mctype):
-        self.qtype = mctype         #Types: ipv4, ipv6 or ethernet
-        self.eid = eid              #Can be : IPv4, MAC address (IPv6 not needed for now)
-        self.iid = iid              #LISP Instance ID for the request
-        self.mask = None            #Mask for the EID
-        self.uptime = None          #Uptime of the map-cache
-        self.expiration = None      #Expiration 
-        self.source = None          #Via which method? Map-reply? Static? Publication?  
-        self.nmr = None             #Is it NMR? True or False
-        self.petr = None            #Is it sending to PETR? which PETRs? List of PETR and its states
-        self.domainid = None        #DomainID
-        self.mhid = None            #Multihoming ID
-        self.rloc = None            #RLOC IP
-        self.rlocstate = None       #What is the state, up, route-reject, admin-down, no-route? self?, list of RLOCs, dict
-        self.priority = None        #LISP priority
-        self.weight = None          #LISP weight
-        self.encapiid = None        #For LISP Extranet 
+            cmd = "sh lisp instance-id {} ethernet map-cache {}".format(self.iid, self.eid)
+            map_cache_output = radkit_cli.get_any_single_output(self.queriedev,cmd,service)
+            i = 0
+
+            if map_cache_output == None:
+                sys.exit("EID not found in map-cache")
+            
+            for line in map_cache_output.splitlines():
+
+                if "via" in line:
+                    self.mask = re.compile( "\/([0-9]+)" ).search(line).group().strip().replace("/","")
+
+                if "uptime" in line:
+                    self.uptime = re.compile( "(?<= uptime:)(.*?)(?=,)" ).search(line).group().strip()
+
+                if "expires" in line:
+                    self.expiration = re.compile( "(?<= expires:)(.*?)(?=,)" ).search(line).group().strip()
+
+                if "Sources:" in line:
+                    self.source = re.compile( "(?<=Sources: )(.*)" ).search(line).group().strip().replace(",","")
+
+                if ("Locator" in line) or i==1:
+                    i+=1
+                    try:
+                        self.rloc = re.compile( "(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})" ).search(line).group().strip()
+                        self.rlocstate = re.compile( "(?<=\s)[a-zA-Z]+" ).search(line).group().strip()
+                        self.priority = re.compile( "(?<=\s)(\d+)(?=\/)" ).search(line).group().strip()
+                        self.weight = re.compile( "\/([0-9]+)" ).search(line).group().strip().replace("/","")
+                    except:
+                        pass
 
 class route_recursion:
     def __init__(self,route,device):
@@ -505,6 +600,7 @@ class route_recursion:
                 #SVI as next as hop
                 elif "Vlan" in line:
                     nh = re.compile("(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})").search(line).group().strip()
+                    vid = re.compile("(?<=Vlan)[0-9]{4}(?=)").search(line).group().strip()
                     arp = "show ip arp {}".format(nh)
                     try:
                         arp_op = radkit_cli.get_any_single_output(self.device,arp,service)
@@ -513,7 +609,7 @@ class route_recursion:
                     for line in arp_op.splitlines():
                         if "ARPA" in line:
                             mac = re.compile( "[0-9a-f]{4}\.[0-9a-f]{4}\.[0-9a-f]{4}" ).search(line).group().strip()
-                            maccmd = "show mac address | i {}".format(mac)
+                            maccmd = "show mac address address {} vlan {}".format(mac,vid)
                             try:
                                 mac_op = radkit_cli.get_any_single_output(self.device,maccmd,service)
                             except:
@@ -599,12 +695,12 @@ class underlay_validations:
             if "t rate" in line:
                 if "input" in line:
                     try:
-                        self.inputpps = re.compile("(?<=,).*(?=packet)").search(line).group().strip()
+                        self.inputpps = re.compile("(?<=rate).*(?=bits)").search(line).group().strip()
                     except:
                         pass
                 if "output" in line:
                     try:
-                        self.outputpps = re.compile("(?<=,).*(?=packet)").search(line).group().strip()
+                        self.outputpps = re.compile("(?<=rate).*(?=bits)").search(line).group().strip()
                     except:
                         pass               
 

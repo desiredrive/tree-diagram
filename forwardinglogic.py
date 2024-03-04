@@ -115,7 +115,7 @@ def l2_east_west(srcdevice, iid, dstmac, rloc, dstip, rmtdevice, service):
 
     #underlay recursion to the RLOC
         
-    print ("RLOC reachability informatiion: \n")
+    print ("RLOC reachability information: \n")
     rloc_reachability = controlplane.route_recursion(rloc,srcdevice)
     rloc_reachability.rloc_data(service)
     print (rloc_reachability.__dict__)
@@ -135,9 +135,9 @@ def l2_east_west(srcdevice, iid, dstmac, rloc, dstip, rmtdevice, service):
         print ("ICMP Connectivity to  {} is good at {} success rate with low MTU".format(rloc,rloc_reachability.ping_to_rloc))
     
     if int(rloc_reachability.mtu_validation[0]) <= 70:
-        print ("WARNING! : Packet Loss  to {} is below threshold of 70% with MTU of {}, actual value is {} %".format(rloc,rloc_reachability.ping_to_rloc,rloc_reachability.mtu))
+        print ("WARNING! : Packet Loss  to {} is below threshold of 70% with MTU of {}, ping rate is value is {} %".format(rloc,rloc_reachability.mtu,rloc_reachability.mtu_validation))
     else:
-        print ("ICMP Connectivity to  {} is good at {} success rate with an MTU of {}".format(rloc,rloc_reachability.ping_to_rloc,rloc_reachability.mtu))
+        print ("ICMP Connectivity to  {} is good at {} success rate with an MTU of {}".format(rloc,rloc_reachability.mtu_validation,rloc_reachability.mtu))
 
     #Host Onboarding for the destination:
     print ("Profiling device where the Destination is located...")

@@ -245,9 +245,13 @@ def get_loopback(hostname, service):
         commands1 = device_inventory.exec([cmd1]).wait()
     except (IndexError, ValueError):
            print ("Unable to fetch configuration from device {}".format(hostname))
-
-    lo0 = commands1.result["{}".format(cmd1)].data
-    for line in lo0.splitlines():
+    try:
+        lo0 = commands1.result["{}".format(cmd1)].data
+        for line in lo0.splitlines():
             if "YES" in line:
                 loopback_address=re.compile( "(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})" ).search(line).group().strip()
                 return (loopback_address)
+    except:
+        pass
+    
+    

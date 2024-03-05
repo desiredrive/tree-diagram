@@ -8,6 +8,7 @@ import ipverifications
 import device_profiler
 import hostonboarding
 import forwardinglogic
+from pprint import pformat
 
 from radkit_client.sync import (
     create_context
@@ -25,7 +26,7 @@ def initial_setup():
     
     #Saved Variables for Faster Execution
     devicelist = {0: {'Name': 'fiab-lab2-virtualpod-mxc5-com', 'Host': '172.12.0.7', 'Type': 'IOS', 'Loopback0': '172.12.1.80'}, 1: {'Name': 'border2-virtualpod-mxc5-com', 'Host': '172.12.0.2', 'Type': 'IOS', 'Loopback0': '172.12.1.66'}, 2: {'Name': 'localcp-virtualpod-mxc5-com', 'Host': '172.12.0.30', 'Type': 'IOS', 'Loopback0': '172.12.1.123'}, 3: {'Name': 'edge1-virtualpod-mxc5-com', 'Host': '172.12.0.3', 'Type': 'IOS', 'Loopback0': '172.12.1.72'}, 4: {'Name': 'border1-virtualpod-mxc5-com', 'Host': '172.12.0.1', 'Type': 'IOS', 'Loopback0': '172.12.1.65'}, 5: {'Name': 'wlc-virtualpod-mxc5-com', 'Host': '172.12.1.252', 'Type': 'IOS', 'Loopback0': None}, 6: {'Name': 's1-border-virtualpod-mxc5-com', 'Host': '172.12.0.9', 'Type': 'IOS', 'Loopback0': '172.12.1.100'}, 7: {'Name': 'edge2-virtualpod-mxc5-com', 'Host': '172.12.0.4', 'Type': 'IOS', 'Loopback0': '172.12.1.73'}, 8: {'Name': 'fiab-lab3-virtualpod-mxc5-com', 'Host': '172.12.0.6', 'Type': 'IOS', 'Loopback0': '172.12.1.90'}, 9: {'Name': 'tcp-virtualpod-mxc5-com', 'Host': '172.12.0.100', 'Type': 'IOS', 'Loopback0': '172.12.0.100'}, 10: {'Name': 'border8kv-virtualpod-mxc5-com', 'Host': '172.12.1.101', 'Type': 'IOS', 'Loopback0': '172.12.1.101'}}
-
+    #devicelist2 = {0: {'Name': 'fiab-pod2-com', 'Host': '172.19.1.80', 'Type': 'IOS', 'Loopback0': '172.19.1.80'}, 1: {'Name': 's1petr-pod2-com', 'Host': '172.19.1.75', 'Type': 'IOS', 'Loopback0': '172.19.1.75'}, 2: {'Name': 'c18-pod2-com', 'Host': '172.19.1.101', 'Type': 'IOS', 'Loopback0': None}, 3: {'Name': 'border1-pod2-com', 'Host': '172.19.1.65', 'Type': 'IOS', 'Loopback0': '172.19.1.65'}, 4: {'Name': 'middle-pod2-com', 'Host': '172.19.1.102', 'Type': 'IOS', 'Loopback0': None}, 5: {'Name': 'a52-pod2-com', 'Host': '172.19.1.103', 'Type': 'IOS', 'Loopback0': None}, 6: {'Name': 'border2-pod2-com', 'Host': '172.19.1.66', 'Type': 'IOS', 'Loopback0': '172.19.1.66'}, 7: {'Name': 'edge1-pod2-com', 'Host': '172.19.1.72', 'Type': 'IOS', 'Loopback0': '172.19.1.72'}, 8: {'Name': 'switch-172-19-1-74-pod2-com', 'Host': '172.19.1.74', 'Type': 'IOS', 'Loopback0': '172.19.1.74'}, 9: {'Name': 'edge2-pod2-com', 'Host': '172.19.1.73', 'Type': 'IOS', 'Loopback0': '172.19.1.73'}}
     #device_source_ip = ipverifications.ip_validator_input("Inventory Management IP address of Source Fabric Device (Edge or L2 Border) > ")
     device_source_ip = "172.12.0.3"
     #endpoint_ip = ip_parser("Endpoint source IP >")
@@ -41,17 +42,18 @@ def initial_setup():
     validatedsubnet = ipverifications.stringvalidator(subnets)
     #devicelist = device_profiler.fabric_builder(validatedsubnet,service)
 
+
     #Profiling device where the Source is Located
-    print ("Profiling device where the Source is located...")
+    print ("Profiling device where the Source is located...\n")
     xtr = device_profiler.device(device_source_ip)
     xtr.profile_device(service)
-    print (xtr.__dict__)
+    print (pformat(vars(xtr), indent=4, width =1, sort_dicts=False))
 
     #Gathering information about the source...
-    print ("Gathering information about the source endpoint...")
+    print ("Gathering information about the source endpoint...\n")
     sourceep = hostonboarding.endpoint_info(endpoint_ip)
     sourceep.host_onboarding_validation(xtr,service)
-    print (sourceep.__dict__)
+    print (pformat(vars(sourceep), indent=4, width =1, sort_dicts=False))
 
     #Extract CPs and convert them into hostnames:
     l2cp_list = sourceep.l2cps
@@ -80,39 +82,17 @@ def initial_setup():
 
         #Intra-XTR L2 Local Execution:
         if sourceep.rloc == dest_rloc:
-            print ("Host {} and {} are in the same XTR {}, performing local checks".format(endpoint_ip,destination_ip,dest_rloc))
+            print ("Host {} and {} are in the same XTR {}, performing local checks \n".format(endpoint_ip,destination_ip,dest_rloc))
         
         #Inter-XTR L2 East West Execution.1
         else:
-            print ("Host {} is in RLOC {} and Host {} is in RLOC {}".format(endpoint_ip, src_rloc, destination_ip,dest_rloc))
+            print ("Host {} is in RLOC {} and Host {} is in RLOC {} \n".format(endpoint_ip, src_rloc, destination_ip,dest_rloc))
             for i in devicelist:
                 lo0 = devicelist[i]['Loopback0']
                 if lo0 == dest_rloc:
                     mgmt = devicelist[i]['Host']
             forwardinglogic.l2_east_west(xtr.hostname,sourceep.l2lispiid,dest_mac,dest_rloc,destination_ip,mgmt,service)
             
-
-    """
-    Validations
-    #border = border1-pod2-com, ins 8190 5ce1.7629.0928
-    #""172.19.1.72", "5254.0000.c5c3", "8189", "control-plane-lastorder-com""
-    res = controlplane.cp_state("172.19.1.72", "5ce1.7629.0928", "8190", "border1-pod2-com")
-    res.l3_state(service)
-    print (res.__dict__)
-    #edge 1 edge1-pod2-com as ETR, 172.19.1.65 as queriedcpip
-    res = controlplane.cp_etr_state("172.19.1.65", "edge1-pod2-com")
-    res.session_state(service)
-    print (res.__dict__)
-    res = controlplane.route_recursion("172.12.1.73", "edge1-virtualpod-mxc5-com")
-    res.rloc_data(service)  
-    print (res.__dict__)
-
-    for i in res.phy:
-        des = controlplane.underlay_validations(i, "edge1-virtualpod-mxc5-com")
-        des.intf_parse(service)
-        print(des.__dict__)
-    """
-
 
 if __name__ == "__main__":
     with create_context():

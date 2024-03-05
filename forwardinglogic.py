@@ -4,6 +4,7 @@ import sys
 import controlplane
 import device_profiler
 import hostonboarding
+from pprint import pformat
 
 #Switching Flow  : From one LISP XTR to Another
 '''
@@ -24,7 +25,7 @@ Are source and destination in the same subnet? If Yes:
 def flowelection(epinfo, dstip):
     issamesubnet=ipverifications.subnet_validator(epinfo.sourceip,dstip,epinfo.mask)
     if issamesubnet==False:
-        print ("Devices in different Subnet, Routing Flow")
+        print ("Devices in different Subnet, Routing Flow\n")
     if issamesubnet==True:
         print ("Devices in the same Subnet, starting Switching Flow \n")
         return ("L2")
@@ -44,7 +45,7 @@ def ar_relay_resolution(dstip, iid, l2cps, service):
     for i in ar_res:
         mac = i.arbinding
         etr = i.etrs
-        print (i.__dict__)
+        print (pformat(vars(i), indent=4, width =1, sort_dicts=False))
         macs.append(mac)
         etrs.append(etr)
     print ("\n")
@@ -68,7 +69,7 @@ def mac_rloc_resolution(dstmac, iid, l2cps, service):
     etrs = []
     print ("L2 LISP MAC Control Plane results: \n")
     for i in l2_res:
-        print (i.__dict__)
+        print (pformat(vars(i), indent=4, width =1, sort_dicts=False))
         try:
             for j in i.etrs:
                 if j != None:
@@ -94,8 +95,13 @@ def mac_rloc_resolution(dstmac, iid, l2cps, service):
 def l2_east_west(srcdevice, iid, dstmac, rloc, dstip, rmtdevice, service):
 
     #execution of L2 LISP Map Cache
-    l2rloc = "172.12.1.73"
-    state = "UP"
+    l2mapcache = controlplane.l2_map_cache(dstmac,iid,srcdevice)
+    l2mapcache.l2map(service)
+
+    print (pformat(vars(l2mapcache), indent=4, width =1, sort_dicts=False)) 
+
+    l2rloc = l2mapcache.rloc
+    state= l2mapcache.rlocstate
 
     bad_states = ['route-reject', 'own', 'admin']
     if any(x  in state for x in bad_states):
@@ -108,7 +114,7 @@ def l2_east_west(srcdevice, iid, dstmac, rloc, dstip, rmtdevice, service):
     if l2rloc == rloc:
         print ("L2 Map-Cache matches CP regsitered RLOC: {} \n".format(rloc))
     else:
-        print ("SMR verifications comming soon")
+        print ("SMR verifications comming soon \n")
         sys.exit("L2 Map-cache {} does not match CP registered RLOC {} \n").format(l2rloc, rloc)
 
     #troubleshooting actions
@@ -118,7 +124,7 @@ def l2_east_west(srcdevice, iid, dstmac, rloc, dstip, rmtdevice, service):
     print ("RLOC reachability information: \n")
     rloc_reachability = controlplane.route_recursion(rloc,srcdevice)
     rloc_reachability.rloc_data(service)
-    print (rloc_reachability.__dict__)
+    print (pformat(vars(rloc_reachability), indent=4, width =1, sort_dicts=False))
 
     print ("Egress Interface details: \n")
     egressstate = []
@@ -127,29 +133,30 @@ def l2_east_west(srcdevice, iid, dstmac, rloc, dstip, rmtdevice, service):
         states.intf_parse(service)
         egressstate.append(states)
     for i in egressstate:
-        print (i.__dict__)
+        print (pformat(vars(i), indent=4, width =1, sort_dicts=False))
     
     if int(rloc_reachability.ping_to_rloc) <= 70:
-        print ("WARNING! : Packet Loss to {} is below threshold of 70%, actual value is {} %".format(rloc, rloc_reachability.ping_to_rloc))
+        print ("WARNING! : Packet Loss to {} is below threshold of 70%, actual value is {} % \n".format(rloc, rloc_reachability.ping_to_rloc))
     else:
-        print ("ICMP Connectivity to  {} is good at {} success rate with low MTU".format(rloc,rloc_reachability.ping_to_rloc))
+        print ("ICMP Connectivity to  {} is good at {} success rate with low MTU \n".format(rloc,rloc_reachability.ping_to_rloc))
     
     if int(rloc_reachability.mtu_validation[0]) <= 70:
-        print ("WARNING! : Packet Loss  to {} is below threshold of 70% with MTU of {}, ping rate is value is {} %".format(rloc,rloc_reachability.mtu,rloc_reachability.mtu_validation))
+        print ("WARNING! : Packet Loss  to {} is below threshold of 70% with MTU of {}, ping rate is value is {} %\n".format(rloc,rloc_reachability.mtu,rloc_reachability.mtu_validation))
     else:
-        print ("ICMP Connectivity to  {} is good at {} success rate with an MTU of {}".format(rloc,rloc_reachability.mtu_validation,rloc_reachability.mtu))
+        print ("ICMP Connectivity to  {} is good at {} success rate with an MTU of {}\n".format(rloc,rloc_reachability.mtu_validation,rloc_reachability.mtu))
 
     #Host Onboarding for the destination:
-    print ("Profiling device where the Destination is located...")
+    print ("Profiling device where the Destination is located...\n")
     dxtr = device_profiler.device(rmtdevice)
     dxtr.profile_device(service)
-    print (dxtr.__dict__)
+    print (pformat(vars(dxtr), indent=4, width =1, sort_dicts=False))
 
     #Gathering information about the source...
-    print ("Gathering information about the source endpoint...")
+    print ("Gathering information about the source endpoint...\n")
     destep = hostonboarding.endpoint_info(dstip)
     destep.host_onboarding_validation(dxtr,service)
-    print (destep.__dict__)
+    print (pformat(vars(destep), indent=4, width =1, sort_dicts=False))
+
 
     #Performing CTS evaluations...
 

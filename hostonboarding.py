@@ -39,12 +39,11 @@ class endpoint_info:
         inith =  finddevice(self.mgmtip)
         inith.find_device(service)
         hostname = inith.hostname
-        print (hostname)
         #Common conditional to avoid parsing the show command itself and the hostname of the device. Pending to work with other prompts...
         matches = ["#", "show"]
 
          #Is the source in IPDT
-        print ("Searching the endpoint in SISF/Device-Tracking in {}".format(hostname))
+        print ("Searching the endpoint in SISF/Device-Tracking in {}\n".format(hostname))
         ipdt_command = "show device-tracking data add {} | i try|/".format(self.sourceip)
         ipdt_output = radkit_cli.get_any_single_output(hostname,ipdt_command,service)
 
@@ -61,7 +60,7 @@ class endpoint_info:
 
 
         #Retrieve Anycast GW Information
-        print ("Endpoint found in VLAN {}, profiling subnet type...".format(self.sourcevlan))
+        print ("Endpoint found in VLAN {}, profiling subnet type...\n".format(self.sourcevlan))
         svi_command = "show ip interface vlan{}".format(self.sourcevlan)
         svi_output = radkit_cli.get_any_single_output(hostname,svi_command,service)
 
@@ -87,7 +86,7 @@ class endpoint_info:
         #L2 LISP Operations (Local DB, Local EID and DynEID)
         #Find the L2 instance-id
         if self.isl3only==False:
-            print ("Obtaining LISP-related information for L2 IID")
+            print ("Obtaining LISP-related information for L2 IID\n")
             l2lisp_iid_cmd = "show lisp eid-table vlan {} ethernet | i Instance".format(self.sourcevlan)
             l2lisp_output = radkit_cli.get_any_single_output(hostname,l2lisp_iid_cmd,service)
             for line in l2lisp_output.splitlines():
@@ -135,7 +134,7 @@ class endpoint_info:
         
         #L3 LISP Operations (Local DB, Local EID and DynEID)
         if self.isl2only==False:
-            print ("Obtaining LISP-related information for L3 IID")
+            print ("Obtaining LISP-related information for L3 IID\n")
             l3lisp_iid_cmd = "show lisp vrf {} | i IID".format(self.sourcevrf)
             l3lisp_output = radkit_cli.get_any_single_output(hostname,l3lisp_iid_cmd,service)
             for line in l3lisp_output.splitlines():
@@ -171,7 +170,7 @@ class endpoint_info:
                             sys.exit("Source device {} has no Control Planes defined for L3".format(hostname))
 
         #CTS/SGT assignmentLISP
-        print ("Obtaining CTS Information for the endpoint")
+        print ("Obtaining CTS Information for the endpoint\n")
         if self.isl2only==False:
             sgt_cmd = "show ip cef vrf {} {} internal | i SGT".format(self.sourcevrf,self.sourceip)
             sgt_output = radkit_cli.get_any_single_output(hostname,sgt_cmd,service)
@@ -187,7 +186,7 @@ class endpoint_info:
 
 
         #Loopback verification RLOC, priority, wight and priority and affinity
-        print ("Validating RLOC Interface for this XTR")
+        print ("Validating RLOC Interface for this XTR\n")
         rlocintf = xtr.rlocdef['Interface']
         if rlocintf != "Lo0":
             sys.exit("Endpoint is on an XTR with no RLOC interface!, verify RLOC configuration")

@@ -92,8 +92,8 @@ class cp_eid:
                 if "Clear" in line:
                     self.isfewap = "False"
 
-        etrs_list = [i for i in etr_list if i not in wlc]
-        if len(etrs_ list) != 1:
+        etrs_list = [i for i in etr_list if i not in wlcs]
+        if len(etrs_list) != 1:
             sys.exit("Multiple RLOCs detected for this L2 Registration, triggering troubleshooting flow\n {}".format(etrs_list))
         self.etrs = etrs_list
 
@@ -660,7 +660,7 @@ class route_recursion:
         for line in pingm_op.splitlines():
             if "Success" in line:
                 percent = re.compile("(?<=is).*(?=percent)").search(line).group().strip()
-                self.mtu_validation = [percent, "MTU {}".format(mini)]
+                self.mtu_validation = percent
 
 class underlay_validations:
     def __init__(self,intf,devicename):

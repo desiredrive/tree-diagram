@@ -50,7 +50,7 @@ class endpoint_info:
         for line in ipdt_output.splitlines():
             if not any(x  in line for x in matches):
                 self.sourcemac = re.compile( "[0-9a-f]{4}\.[0-9a-f]{4}\.[0-9a-f]{4}" ).search(line).group().strip()
-                self.sourcevlan = re.compile( "(\s([A-Za-z0-9]+\s)+)" ).search(line).group().strip()
+                self.sourcevlan = re.compile( "(?<= )(?:409[0-4]|40[0-8]\d|4[0-9]\d{2}|[1-9]\d{0,2}|[1-3]\d{3})(?= )" ).search(line).group().strip()
                 self.sourceport = re.compile( " (?:[A-Z][A-Za-z_-]*[a-z]|[A-Z])\s?\d+(?:\/\d+)*(?::\d+)?(?:\.\d+)? ").search(line).group().strip()
                 self.sourceip = re.compile( "(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})" ).search(line).group().strip()
                 self.ipdtmethod = re.compile(".*(?= \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})").search(line).group().strip()

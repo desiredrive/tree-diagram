@@ -5,58 +5,150 @@ import sys
 import radkit_cli
 from device_profiler import device, finddevice
 
+def rulefinder(permissionop):
+    matches1 = ["#", "Role-based"]
+    if permissionop == None:
+            acluname = "Default Permit"
+    elif permissionop != None:
+        for line in permissionop.splitlines():
+            if "Role-based" in line:
+                rulename = line
+                if "configured" in line:
+                    dynaclflag = False
+                else:
+                    dynaclflag = True
+            if not any(x  in line for x in matches1):
+                if dynaclflag == False:
+                    aclname = line.strip()
+                if dynaclflag == True:
+                    aclname = line.split("-")
+                    acluname = aclname[0]
+    if acluname == None:
+        sys.exit ("The following rule has no ACL downloaded or configured: {}".format(rulename))
+    return (acluname,dynaclflag)
+
+def tradaclparser(aclop):
+    aces=[]
+    matches = ["#", "show"]
+    for line in aclop.splitlines():
+        if not any(x  in line for x in matches):
+            ace = line.split("(")
+            ace = ace[0].strip()
+            aces.append(ace)
+    return (aces)
+
+def rbaclparser(aclop):
+    aces=[]
+    matches = ["#", "show", "ACEs:"]
+    for line in aclop.splitlines():
+        if not any(x  in line for x in matches):
+            ace = line.strip()
+            aces.append(ace)
+    return (aces)
+
+                
 class cts_info:
 
     def __init__(self, srcep, dstep, device):
-        self.srcip = None
-        self.dstip = None
-        self.srcvlan = None
-        self.dstvlan = None
-        self.srcvrf = None
-        self.dstvrf = None
-        self.srcsgtnum = None
-        self.dstsgtnum = None
-
+        self.globalenforcement = None
+        self.vlanenforcement = None
+        self.defaultrule = None
+        self.specificrule = None
+        self.counters = None 
+        self.acl = None
+        self.propagation = False
+        self.trusting = None
+        self.defaultsgt = None
+        self.devicesgt = None
+        self.dstep = dstep
 
         #Initialization
         if dstep.isl2only == True:
             self.dstvrf = "Default"
         else:
             self.dstvrf = dstep.sourcevrf
+        
+        if srcep.isl2only == True:
+            self.scrvrf = srcep.sourcevrf
+        else:
+            self.scrvrf = srcep.sourcevrf
 
         self.srcip = srcep.sourceip
         self.dstip = dstep.sourceip
 
         self.srcvlan = srcep.sourcevlan
         self.dstvlan = dstep.sourcevlan
-
-        self.srcvrf = srcep.sourcevrf
+        
         self.srcsgtnum = srcep.sgt
         self.dstsgtnum = dstep.sgt
 
+        self.hostname  = device
 
-    #Layer 2 (MAC) Control Plane Query
-    def enforcement(self, service):
-        self.dstep.mgmtip = mgmtip
-        inith =  finddevice(mgmtip)
-        inith.find_device(service)
-        hostname = inith.hostname
+    def enforcement_flow(self, service):
+        #Define main IOS Commands
+        ctsenfcmd = 'show cts | i Enforce'
+        ctsenfop = radkit_cli.get_any_single_output(self.hostname,ctsenfcmd,service)
+        for line in ctsenfop.splitlines():
+            if "Based Enforcement" in line:
+                if "Enabled" in line:
+                    self.globalenforcement = True
+                else:
+                    self.globalenforcement = False
+            if "VLAN" in line:
+                if "Enabled" in line:
+                    ctsvlancmd = 'show run | i enforcement vlan'
+                    ctsvlanop = radkit_cli.get_any_single_output(self.hostname,ctsvlancmd,service)
+                    for line in ctsvlanop.splitlines():
+                        if ctsvlanop == None:
+                            self.vlanenforcement = False
+                        else:
+                            if "vlan-list" in line:
+                                if self.dstvlan in line:
+                                    self.vlanenforcement = True                
+                else:
+                    self.vlanenforcement = False              
 
-        #Validating Global Enforcement on Destination Device
-        ctsenf_cmd = "show run | i role-based enfo"
-        ctsdef_cmd = "show cts role-based enforcement default"
-        ctsrule_cmd = "show cts role-based enforcement from {} to {}".format(self.srcsgtnum, self.dstsgtnum)
-        ctscnt_cmd = "show cts role-based counters from {} to {}".format(self.srcsgtnum, self.dstsgtnum)
+    
+        ctsspeccmd = 'show cts role-based  permissions from {} to {} | ex RBACL'.format(self.srcsgtnum,self.dstsgtnum)
+        ctsspecop = radkit_cli.get_any_single_output(self.hostname,ctsspeccmd,service)
+        aclpair = rulefinder(ctsspecop)
+        aclname = aclpair[0]
+        dynstate = aclpair[1]
 
 
-        self.globalenforcement = None
+        if aclname == "Default Permit":
+            self.specificrule = False
+            ctsdefcmd = 'show cts role-based permissions default | ex RBACL'
+            ctsdefop = radkit_cli.get_any_single_output(self.hostname,ctsdefcmd,service)
+            aclpair = rulefinder(ctsdefop)
+            aclname = aclpair[0]
+            dynstate = aclpair[1]
+            if aclname == "Default Permit":
+                self.defaultrule = "Default Permit"
+            else:
+                if dynstate == True:
+                    rbaclcmd = "show cts rbacl \"{}\" | se ACEs".format(aclname)
+                    rbaclop = radkit_cli.get_any_single_output(self.hostname, rbaclcmd,service)
+                    self.acl = rbaclparser(rbaclop)
+                if dynstate == False:
+                    aclcmd = "show ip access-list {} | ex Role".format(aclname)
+                    aclop = radkit_cli.get_any_single_output(self.hostname, aclcmd,service)
+                    self.acl = tradaclparser(aclop)
+        else:
+            self.specificrule = True
+            if dynstate == True:
+                rbaclcmd = "show cts rbacl \"{}\" | se ACEs".format(aclname)
+                rbaclop = radkit_cli.get_any_single_output(self.hostname, rbaclcmd,service)
+                self.acl = rbaclparser(rbaclop)
+            if dynstate == False:
+                aclcmd = "show ip access-list {} | ex Role".format(aclname)
+                aclop = radkit_cli.get_any_single_output(self.hostname, aclcmd,service)
+                self.acl = tradaclparser(aclop)
 
-        self.vlanenforcement = None
-        self.sgtbinding = None
 
-        self.rbacl = None
-        self.defaultrule = None
-        self.counters = None
+        
+        #cmd5 = 'show cts role-based counters default'
+        #cmd6 = 'show cts role-based counters from {} to {} | ex From|Role'
 
 class cts_test:
 
@@ -115,5 +207,3 @@ class cts_test:
             if "Refresh timer is set" in line:
                 self.pacrefresh == re.compile("(?<=for).*").search(line).group().strip()
 
-        for line in ctsradius_cmd.splitlines():
-            if "server"ha e

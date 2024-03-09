@@ -5,6 +5,7 @@ import controlplane
 import device_profiler
 import hostonboarding
 from pprint import pformat
+import ctsprocessing
 
 #Switching Flow  : From one LISP XTR to Another
 '''
@@ -38,10 +39,14 @@ def ar_relay_resolution(dstip, iid, l2cps, service):
         ar_q = controlplane.cp_eid(dstip,iid,queriedcp)
         ar_q.address_q(service)
         ar_res.append(ar_q)
-    
+
     macs = []
     etrs = []
+
+    if ar_res == None:
+        sys.exit("No MAC address were found in any of the local Control Planes")
     print ("Address-Resolution Binding results: \n")
+
     for i in ar_res:
         mac = i.arbinding
         etr = i.etrs
@@ -67,6 +72,8 @@ def mac_rloc_resolution(dstmac, iid, l2cps, service):
 
     wlcs = []    
     etrs = []
+    if l2_res == None:
+        sys.exit ("There were no RLOCs binded to this MAC address in any of the local Control Planes")
     print ("L2 LISP MAC Control Plane results: \n")
     for i in l2_res:
         print (pformat(vars(i), indent=4, width =1, sort_dicts=False))
@@ -92,10 +99,10 @@ def mac_rloc_resolution(dstmac, iid, l2cps, service):
                  
     return (etrs[0])
 
-def l2_east_west(srcdevice, iid, dstmac, rloc, dstip, rmtdevice, service):
+def l2_east_west(srcdevice, sourceep, dstmac, rloc, dstip, rmtdevice, service):
 
     #execution of L2 LISP Map Cache
-    l2mapcache = controlplane.l2_map_cache(dstmac,iid,srcdevice)
+    l2mapcache = controlplane.l2_map_cache(dstmac,sourceep.l2lispiid,srcdevice)
     l2mapcache.l2map(service)
 
     print (pformat(vars(l2mapcache), indent=4, width =1, sort_dicts=False)) 
@@ -138,12 +145,12 @@ def l2_east_west(srcdevice, iid, dstmac, rloc, dstip, rmtdevice, service):
     if int(rloc_reachability.ping_to_rloc) <= 70:
         print ("WARNING! : Packet Loss to {} is below threshold of 70%, actual value is {} % \n".format(rloc, rloc_reachability.ping_to_rloc))
     else:
-        print ("ICMP Connectivity to  {} is good at {} success rate with low MTU \n".format(rloc,rloc_reachability.ping_to_rloc))
+        print ("ICMP Connectivity to  {} is good at {} % success rate with low MTU \n".format(rloc,rloc_reachability.ping_to_rloc))
     
-    if int(rloc_reachability.mtu_validation[0]) <= 70:
+    if int(rloc_reachability.mtu_validation) <= 70:
         print ("WARNING! : Packet Loss  to {} is below threshold of 70% with MTU of {}, ping rate is value is {} %\n".format(rloc,rloc_reachability.mtu,rloc_reachability.mtu_validation))
     else:
-        print ("ICMP Connectivity to  {} is good at {} success rate with an MTU of {}\n".format(rloc,rloc_reachability.mtu_validation,rloc_reachability.mtu))
+        print ("ICMP Connectivity to  {} is good at {} % success rate with an MTU of {}\n".format(rloc,rloc_reachability.mtu_validation,rloc_reachability.mtu))
 
     #Host Onboarding for the destination:
     print ("Profiling device where the Destination is located...\n")
@@ -159,7 +166,10 @@ def l2_east_west(srcdevice, iid, dstmac, rloc, dstip, rmtdevice, service):
 
 
     #Performing CTS evaluations...
-
+    print ("Gathering CTS information between SGTs...\n")
+    ctsstate = ctsprocessing.cts_info(sourceep,destep,dxtr.hostname)
+    ctsstate.enforcement_flow(service)
+    print (pformat(vars(ctsstate), indent=4, width =1, sort_dicts=False))
     
 
 def switchingflow(epinfo, dstip, service, l2cps):

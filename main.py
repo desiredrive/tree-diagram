@@ -25,20 +25,20 @@ def initial_setup():
 
     
     #Saved Variables for Faster Execution
-    devicelist = {0: {'Name': 'fiab-lab2-virtualpod-mxc5-com', 'Host': '172.12.0.7', 'Type': 'IOS', 'Loopback0': '172.12.1.80'}, 1: {'Name': 'border2-virtualpod-mxc5-com', 'Host': '172.12.0.2', 'Type': 'IOS', 'Loopback0': '172.12.1.66'}, 2: {'Name': 'localcp-virtualpod-mxc5-com', 'Host': '172.12.0.30', 'Type': 'IOS', 'Loopback0': '172.12.1.123'}, 3: {'Name': 'edge1-virtualpod-mxc5-com', 'Host': '172.12.0.3', 'Type': 'IOS', 'Loopback0': '172.12.1.72'}, 4: {'Name': 'border1-virtualpod-mxc5-com', 'Host': '172.12.0.1', 'Type': 'IOS', 'Loopback0': '172.12.1.65'}, 5: {'Name': 'wlc-virtualpod-mxc5-com', 'Host': '172.12.1.252', 'Type': 'IOS', 'Loopback0': None}, 6: {'Name': 's1-border-virtualpod-mxc5-com', 'Host': '172.12.0.9', 'Type': 'IOS', 'Loopback0': '172.12.1.100'}, 7: {'Name': 'edge2-virtualpod-mxc5-com', 'Host': '172.12.0.4', 'Type': 'IOS', 'Loopback0': '172.12.1.73'}, 8: {'Name': 'fiab-lab3-virtualpod-mxc5-com', 'Host': '172.12.0.6', 'Type': 'IOS', 'Loopback0': '172.12.1.90'}, 9: {'Name': 'tcp-virtualpod-mxc5-com', 'Host': '172.12.0.100', 'Type': 'IOS', 'Loopback0': '172.12.0.100'}, 10: {'Name': 'border8kv-virtualpod-mxc5-com', 'Host': '172.12.1.101', 'Type': 'IOS', 'Loopback0': '172.12.1.101'}}
-    #devicelist2 = {0: {'Name': 'fiab-pod2-com', 'Host': '172.19.1.80', 'Type': 'IOS', 'Loopback0': '172.19.1.80'}, 1: {'Name': 's1petr-pod2-com', 'Host': '172.19.1.75', 'Type': 'IOS', 'Loopback0': '172.19.1.75'}, 2: {'Name': 'c18-pod2-com', 'Host': '172.19.1.101', 'Type': 'IOS', 'Loopback0': None}, 3: {'Name': 'border1-pod2-com', 'Host': '172.19.1.65', 'Type': 'IOS', 'Loopback0': '172.19.1.65'}, 4: {'Name': 'middle-pod2-com', 'Host': '172.19.1.102', 'Type': 'IOS', 'Loopback0': None}, 5: {'Name': 'a52-pod2-com', 'Host': '172.19.1.103', 'Type': 'IOS', 'Loopback0': None}, 6: {'Name': 'border2-pod2-com', 'Host': '172.19.1.66', 'Type': 'IOS', 'Loopback0': '172.19.1.66'}, 7: {'Name': 'edge1-pod2-com', 'Host': '172.19.1.72', 'Type': 'IOS', 'Loopback0': '172.19.1.72'}, 8: {'Name': 'switch-172-19-1-74-pod2-com', 'Host': '172.19.1.74', 'Type': 'IOS', 'Loopback0': '172.19.1.74'}, 9: {'Name': 'edge2-pod2-com', 'Host': '172.19.1.73', 'Type': 'IOS', 'Loopback0': '172.19.1.73'}}
+    #devicelist = {0: {'Name': 'fiab-lab2-virtualpod-mxc5-com', 'Host': '172.12.0.7', 'Type': 'IOS', 'Loopback0': '172.12.1.80'}, 1: {'Name': 'border2-virtualpod-mxc5-com', 'Host': '172.12.0.2', 'Type': 'IOS', 'Loopback0': '172.12.1.66'}, 2: {'Name': 'localcp-virtualpod-mxc5-com', 'Host': '172.12.0.30', 'Type': 'IOS', 'Loopback0': '172.12.1.123'}, 3: {'Name': 'edge1-virtualpod-mxc5-com', 'Host': '172.12.0.3', 'Type': 'IOS', 'Loopback0': '172.12.1.72'}, 4: {'Name': 'border1-virtualpod-mxc5-com', 'Host': '172.12.0.1', 'Type': 'IOS', 'Loopback0': '172.12.1.65'}, 5: {'Name': 'wlc-virtualpod-mxc5-com', 'Host': '172.12.1.252', 'Type': 'IOS', 'Loopback0': None}, 6: {'Name': 's1-border-virtualpod-mxc5-com', 'Host': '172.12.0.9', 'Type': 'IOS', 'Loopback0': '172.12.1.100'}, 7: {'Name': 'edge2-virtualpod-mxc5-com', 'Host': '172.12.0.4', 'Type': 'IOS', 'Loopback0': '172.12.1.73'}, 8: {'Name': 'fiab-lab3-virtualpod-mxc5-com', 'Host': '172.12.0.6', 'Type': 'IOS', 'Loopback0': '172.12.1.90'}, 9: {'Name': 'tcp-virtualpod-mxc5-com', 'Host': '172.12.0.100', 'Type': 'IOS', 'Loopback0': '172.12.0.100'}, 10: {'Name': 'border8kv-virtualpod-mxc5-com', 'Host': '172.12.1.101', 'Type': 'IOS', 'Loopback0': '172.12.1.101'}}
+    devicelist = {0: {'Name': 'fiab-pod2-com', 'Host': '172.19.1.80', 'Type': 'IOS', 'Loopback0': '172.19.1.80'}, 1: {'Name': 's1petr-pod2-com', 'Host': '172.19.1.75', 'Type': 'IOS', 'Loopback0': '172.19.1.75'}, 2: {'Name': 'c18-pod2-com', 'Host': '172.19.1.101', 'Type': 'IOS', 'Loopback0': None}, 3: {'Name': 'border1-pod2-com', 'Host': '172.19.1.65', 'Type': 'IOS', 'Loopback0': '172.19.1.65'}, 4: {'Name': 'middle-pod2-com', 'Host': '172.19.1.102', 'Type': 'IOS', 'Loopback0': None}, 5: {'Name': 'a52-pod2-com', 'Host': '172.19.1.103', 'Type': 'IOS', 'Loopback0': None}, 6: {'Name': 'border2-pod2-com', 'Host': '172.19.1.66', 'Type': 'IOS', 'Loopback0': '172.19.1.66'}, 7: {'Name': 'edge1-pod2-com', 'Host': '172.19.1.72', 'Type': 'IOS', 'Loopback0': '172.19.1.72'}, 8: {'Name': 'switch-172-19-1-74-pod2-com', 'Host': '172.19.1.74', 'Type': 'IOS', 'Loopback0': '172.19.1.74'}, 9: {'Name': 'edge2-pod2-com', 'Host': '172.19.1.73', 'Type': 'IOS', 'Loopback0': '172.19.1.73'}}
     #device_source_ip = ipverifications.ip_validator_input("Inventory Management IP address of Source Fabric Device (Edge or L2 Border) > ")
-    device_source_ip = "172.12.0.3"
+    device_source_ip = "172.19.1.73"
     #endpoint_ip = ip_parser("Endpoint source IP >")
-    endpoint_ip = "172.12.10.7"
+    endpoint_ip = "172.19.10.7"
     #destination_ip = ip_parser("Destination IP >")
-    destination_ip = "172.12.10.123"
+    destination_ip = "172.19.10.2"
 
     #Add the management IP subnet of the fabric site in Catalyst Center, all fabric devices must be within these subnets
     #You can use multiple subnets to scope the fabric separated by commas, ex: 172.12.0.0/16, 172.16.0.0/16, 172.12.1.72/32
     #Restrict it as much as possible.
 
-    subnets = "172.12.0.0/16, 172.12.1.65/32"
+    subnets = "172.12.0.0/16, 172.12.1.65/32, 172.19.0.0/16"
     validatedsubnet = ipverifications.stringvalidator(subnets)
     #devicelist = device_profiler.fabric_builder(validatedsubnet,service)
 
@@ -91,7 +91,7 @@ def initial_setup():
                 lo0 = devicelist[i]['Loopback0']
                 if lo0 == dest_rloc:
                     mgmt = devicelist[i]['Host']
-            forwardinglogic.l2_east_west(xtr.hostname,sourceep.l2lispiid,dest_mac,dest_rloc,destination_ip,mgmt,service)
+            forwardinglogic.l2_east_west(xtr.hostname,sourceep,dest_mac,dest_rloc,destination_ip,mgmt,service)
             
 
 if __name__ == "__main__":

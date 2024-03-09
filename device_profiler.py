@@ -52,7 +52,7 @@ class device:
         cmd3 = 'show lisp service ipv4 | i PITR|Map-Server|Map-Resolver|ETR'
         cmd4 = 'show ip protocols | i lisp'
         cmd5 = 'show run | i route-import'
-        cmd6 = 'show run | i tracking tracking'
+        cmd6 = 'show device-tracking policies | i DT-GUARD-VLAN'
         cmd7 = 'show lisp service ipv4 | se Map-Server'
         cmd8 = 'show ver | i IOS Soft|bytes of memory'
         cmd9 = 'show cdp neighbor detail | i Device ID|Interface'
@@ -119,7 +119,7 @@ class device:
 
         #Edge node Validation (or L2 Border...)
         for line in fe_ipdtcheck.splitlines():
-            if "device-tracking tracking" in line:
+            if "vlan" in line:
                 self.edge=True
     
         #IOS and Model

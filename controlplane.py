@@ -75,25 +75,26 @@ class cp_eid:
         self.arbinding = "NA"
 
         if cp_server_output == None:
-            sys.exit("MAC Address not found in control plane")
+            print("MAC Registration not found in CP {}".format(self.queriedcp))
+        try:
+            for line in cp_server_output.splitlines():
+                if "ETR" in line:
+                    etrs = re.compile( "(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})" ).search(line).group().strip()
+                    etr_list.append(etrs) 
 
-        for line in cp_server_output.splitlines():
-            if "ETR" in line:
-                etrs = re.compile( "(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})" ).search(line).group().strip()
-                etr_list.append(etrs) 
-
-            if "sourced by reliable transport" in line:
+                if "sourced by reliable transport" in line:
                     self.protocol = "TCP"
 
-            if "WLC AP bit:" in line:
-                self.regbywlc = "True" 
-                if "Set" in line:
-                    self.isfewap = "True"
-                if "Clear" in line:
-                    self.isfewap = "False"
-
+                if "WLC AP bit:" in line:
+                    self.regbywlc = "True" 
+                    if "Set" in line:
+                        self.isfewap = "True"
+                    if "Clear" in line:
+                        self.isfewap = "False"
+        except:
+            pass
         etrs_list = [i for i in etr_list if i not in wlcs]
-        if len(etrs_list) != 1:
+        if len(etrs_list) > 1:
             sys.exit("Multiple RLOCs detected for this L2 Registration, triggering troubleshooting flow\n {}".format(etrs_list))
         self.etrs = etrs_list
 
@@ -141,16 +142,18 @@ class cp_eid:
             self.regbywlc = "NA"
 
             if cp_server_output == None:
-                sys.exit("ARP is not found in control plane")
-
-            for line in cp_server_output.splitlines():
-                if "ETR" in line:
-                    etrs = re.compile( "(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})" ).search(line).group().strip()
-                    etr_list.append(etrs)
+                print("ARP Registration not found in CP {}".format(self.queriedcp))
+            try:
+                for line in cp_server_output.splitlines():
+                    if "ETR" in line:
+                        etrs = re.compile( "(\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})" ).search(line).group().strip()
+                        etr_list.append(etrs)
             
-                if "Hardware" in line:
-                    self.arbinding = re.compile("[0-9a-f]{4}\.[0-9a-f]{4}\.[0-9a-f]{4}").search(line).group().strip()       
-            self.etrs = etr_list
+                    if "Hardware" in line:
+                        self.arbinding = re.compile("[0-9a-f]{4}\.[0-9a-f]{4}\.[0-9a-f]{4}").search(line).group().strip()       
+                        self.etrs = etr_list
+            except:
+                pass
 
 class cp_state:
 

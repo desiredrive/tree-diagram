@@ -35,3 +35,4 @@ def get_any_single_output(hostname,command: str,service):
     except ValueError:
         print ("Error when getting the following command: {}".format(commands))
     return output
+

@@ -44,7 +44,7 @@ class endpoint_info:
 
          #Is the source in IPDT
         print ("Searching the endpoint in SISF/Device-Tracking in {}\n".format(hostname))
-        ipdt_command = "show device-tracking data add {} | i try|/".format(self.sourceip)
+        ipdt_command = "show device-tracking data add {} | i try|/|Ac".format(self.sourceip)
         ipdt_output = radkit_cli.get_any_single_output(hostname,ipdt_command,service)
 
         for line in ipdt_output.splitlines():

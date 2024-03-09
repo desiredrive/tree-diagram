@@ -6,10 +6,16 @@ import radkit_cli
 from device_profiler import device, finddevice
 
 def rulefinder(permissionop):
-    matches1 = ["#", "Role-based"]
-    if permissionop == None:
+    matches1 = ["#", "show", "Role-based"]
+    permsarray = []
+    for i in permissionop.splitlines():
+        if not any(x  in i for x in matches1):
+            permsarray.append(i)
+    permsarray = [i for i in permsarray if i]
+    if len(permsarray) == 0:
             acluname = "Default Permit"
-    elif permissionop != None:
+            dynaclflag = None
+    elif len(permsarray) != 0:
         for line in permissionop.splitlines():
             if "Role-based" in line:
                 rulename = line
@@ -17,12 +23,17 @@ def rulefinder(permissionop):
                     dynaclflag = False
                 else:
                     dynaclflag = True
+        
+        for line in permissionop.splitlines():
             if not any(x  in line for x in matches1):
-                if dynaclflag == False:
-                    aclname = line.strip()
-                if dynaclflag == True:
-                    aclname = line.split("-")
-                    acluname = aclname[0]
+                line = line.strip()
+                if line != '':
+                    if dynaclflag == False:
+                        acluname = line.strip()
+                    if dynaclflag == True:
+                        aclname = line.split("-")
+                        acluname = aclname[0]
+
     if acluname == None:
         sys.exit ("The following rule has no ACL downloaded or configured: {}".format(rulename))
     return (acluname,dynaclflag)
@@ -32,9 +43,11 @@ def tradaclparser(aclop):
     matches = ["#", "show"]
     for line in aclop.splitlines():
         if not any(x  in line for x in matches):
-            ace = line.split("(")
-            ace = ace[0].strip()
-            aces.append(ace)
+            line = line.strip()
+            if line != '':
+                ace = line.split("(")
+                ace = ace[0].strip()
+                aces.append(ace)
     return (aces)
 
 def rbaclparser(aclop):
@@ -42,8 +55,9 @@ def rbaclparser(aclop):
     matches = ["#", "show", "ACEs:"]
     for line in aclop.splitlines():
         if not any(x  in line for x in matches):
-            ace = line.strip()
-            aces.append(ace)
+            line = line.strip()
+            if line != '':
+                aces.append(line)
     return (aces)
 
                 
@@ -55,10 +69,11 @@ class cts_info:
         self.defaultrule = None
         self.specificrule = None
         self.counters = None 
-        self.acl = None
+        self.aclname = None
+        self.aces = None
         self.propagation = False
         self.trusting = None
-        self.defaultsgt = None
+        self.trustsgt = None
         self.devicesgt = None
         self.dstep = dstep
 
@@ -118,6 +133,7 @@ class cts_info:
 
         if aclname == "Default Permit":
             self.specificrule = False
+            self.defaultrule = True
             ctsdefcmd = 'show cts role-based permissions default | ex RBACL'
             ctsdefop = radkit_cli.get_any_single_output(self.hostname,ctsdefcmd,service)
             aclpair = rulefinder(ctsdefop)
@@ -129,21 +145,25 @@ class cts_info:
                 if dynstate == True:
                     rbaclcmd = "show cts rbacl \"{}\" | se ACEs".format(aclname)
                     rbaclop = radkit_cli.get_any_single_output(self.hostname, rbaclcmd,service)
-                    self.acl = rbaclparser(rbaclop)
+                    aces = rbaclparser(rbaclop)
                 if dynstate == False:
                     aclcmd = "show ip access-list {} | ex Role".format(aclname)
                     aclop = radkit_cli.get_any_single_output(self.hostname, aclcmd,service)
-                    self.acl = tradaclparser(aclop)
+                    aces = tradaclparser(aclop)
+                self.aclname = aclname
+                self.aces = aces
         else:
             self.specificrule = True
             if dynstate == True:
                 rbaclcmd = "show cts rbacl \"{}\" | se ACEs".format(aclname)
                 rbaclop = radkit_cli.get_any_single_output(self.hostname, rbaclcmd,service)
-                self.acl = rbaclparser(rbaclop)
+                aces = rbaclparser(rbaclop)
             if dynstate == False:
                 aclcmd = "show ip access-list {} | ex Role".format(aclname)
                 aclop = radkit_cli.get_any_single_output(self.hostname, aclcmd,service)
-                self.acl = tradaclparser(aclop)
+                aces = tradaclparser(aclop)
+            self.aclname = aclname
+            self.aces = aces           
 
 
         

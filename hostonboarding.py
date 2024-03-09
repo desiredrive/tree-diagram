@@ -176,13 +176,13 @@ class endpoint_info:
             sgt_output = radkit_cli.get_any_single_output(hostname,sgt_cmd,service)
             for line in sgt_output.splitlines():
                 if "RBAC" in line:
-                    self.sourcesgt = re.compile("(?<=SGT).*(?=S)").search(line).group().strip()
+                    self.sgt = re.compile("(?<=SGT).*(?=S)").search(line).group().strip()
         if self.isl2only==True:
             sgt_cmd = "show ip cef {} internal | i SGT".format(self.sourceip)
             sgt_output = radkit_cli.get_any_single_output(hostname,sgt_cmd,service)
             for line in sgt_output.splitlines():
                 if "RBAC" in line:
-                    self.sourcesgt = re.compile("(?<=SGT).*(?=S)").search(line).group().strip()
+                    self.sgt = re.compile("(?<=SGT).*(?=S)").search(line).group().strip()
 
 
         #Loopback verification RLOC, priority, wight and priority and affinity

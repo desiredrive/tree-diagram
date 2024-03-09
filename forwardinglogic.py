@@ -169,7 +169,7 @@ def l2_east_west(srcdevice, sourceep, dstmac, rloc, dstip, rmtdevice, service):
     print ("Gathering CTS information between SGTs...\n")
     ctsstate = ctsprocessing.cts_info(sourceep,destep,dxtr.hostname)
     ctsstate.enforcement_flow(service)
-    print (pformat(vars(ctsstate), indent=4, width =1, sort_dicts=False))
+    print (pformat(vars(ctsstate), indent=4, width=100, sort_dicts=False))
     
 
 def switchingflow(epinfo, dstip, service, l2cps):

@@ -58,7 +58,9 @@ def ar_relay_resolution(dstip, iid, l2cps, service):
     macs = [x for x in macs if x is not None]
     if len (macs) > 1:
         sys.exit("The destination IP {} has more than 1 MAC address: {} from {} \n".format(dstip, macs, etrs))
-                 
+    
+    if len (macs) == 0:
+        sys.exit("No MAC address were found in any of the local Control Planes")
     return (macs[0])
 
 def mac_rloc_resolution(dstmac, iid, l2cps, service):
@@ -170,7 +172,16 @@ def l2_east_west(srcdevice, sourceep, dstmac, rloc, dstip, rmtdevice, service):
     ctsstate = ctsprocessing.cts_info(sourceep,destep,dxtr.hostname)
     ctsstate.enforcement_flow(service)
     print (pformat(vars(ctsstate), indent=4, width=100, sort_dicts=False))
+
+    ctscounters = ctsstate.counters
+    hwdenies = ctscounters['HW Denied']
+    swdenies = ctscounters['SW Denied']
     
+    if int(hwdenies) != 0:
+        print ("Warning!!, A total of {} HW deny counters found for traffic between {} and {} in device: {} , RBACL is : {}, evaluate if this impacts your traffic".format(hwdenies, sourceep.sourceip, dstip, dxtr.hostname, ctsstate.aclname))
+    if int(swdenies) != 0:
+        print ("Warning!!, A total of {} SW deny counters found for traffic between {} and {} in device: {} , RBACL is : {}, evaluate if this impacts your traffic".format(swdenies, sourceep.sourceip, dstip, dxtr.hostname, ctsstate.aclname))
+
 
 def switchingflow(epinfo, dstip, service, l2cps):
     l2onlystate = epinfo.isl2only

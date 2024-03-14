@@ -141,7 +141,6 @@ class cts_info:
         self.aclname = None
         self.aces = None
         self.ctsinterfaces = None
-        self.devicesgt = None
         self.dstep = dstep
 
         #Initialization

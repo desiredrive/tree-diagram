@@ -65,16 +65,18 @@ class device:
             loopdef = self.device_inventory.exec([cmd10]).wait()
         except (IndexError, ValueError):
             sys.exit("Unable to fetch configuration from device {}".format(self.mgmtip))  
-        
-        lo0 = commands1.result["{}".format(cmd1)].data
-        fabric_role = commands1.result["{}".format(cmd3)].data
-        lisp_enabled = commands1.result["{}".format(cmd4)].data
-        internal_border = commands2.result["{}".format(cmd5)].data
-        fe_ipdtcheck = commands2.result["{}".format(cmd6)].data
-        map_servers = commands2.result["{}".format(cmd7)].data
-        model_ios = commands2.result ["{}".format(cmd8)].data
-        cdpneiop = cdp.result["{}".format(cmd9)].data
-        loopres = loopdef.result["{}".format(cmd10)].data
+        try: 
+            lo0 = commands1.result["{}".format(cmd1)].data
+            fabric_role = commands1.result["{}".format(cmd3)].data
+            lisp_enabled = commands1.result["{}".format(cmd4)].data
+            internal_border = commands2.result["{}".format(cmd5)].data
+            fe_ipdtcheck = commands2.result["{}".format(cmd6)].data
+            map_servers = commands2.result["{}".format(cmd7)].data
+            model_ios = commands2.result ["{}".format(cmd8)].data
+            cdpneiop = cdp.result["{}".format(cmd9)].data
+            loopres = loopdef.result["{}".format(cmd10)].data
+        except:
+            sys.exit("Unable to profile device {}".format(self.hostname))
     
         for line in lo0.splitlines():
             if "line protocol is down" in line: 

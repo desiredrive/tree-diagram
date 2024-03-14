@@ -4,6 +4,7 @@ import re
 import sys
 import radkit_cli
 from device_profiler import device, finddevice
+import controlplane
 
 def rulefinder(permissionop):
     matches1 = ["#", "show", "Role-based"]
@@ -72,18 +73,63 @@ def ctscounters(ssgt, dsgt, default_flag,service,hostname):
             if line != '':
                 counters = re.split ("\s+", line)
                 break
-    countersd = {}
-    countersd[0] = {'From' : counters[0]}
-    countersd[1] = {'To' : counters[1]}
-    countersd[2] = {'SW Denied' : counters[2]}
-    countersd[3] = {'HW Denied' : counters[3]}
-    countersd[4] = {'SW Permit' : counters[4]}
-    countersd[5] = {'HW Permit' : counters[5]}
-    countersd[6] = {'SW Monitor' : counters[6]}
-    countersd[7] = {'HW Monitor' : counters[7]}
+    countersd = {
+                'From' : counters[0],
+                'To' : counters[1],
+                'SW Denied' : counters[2],
+                'HW Denied' : counters[3],
+                'SW Permit' : counters[4],
+                'HW Permit' : counters[5],
+                'SW Monitor' : counters[6],
+                'HW Monitor' : counters[7]
+                }
 
     return (countersd)
 
+def ctsinterface(interface, service, hostname):
+    matches = ["#", "show"]
+
+
+    trust = "Untrusted"
+    propagate = False
+    sgt = 0
+    intmatch = ['Ac', 'Tu', 'LISP', 'L2LISP']
+
+    if 'Po' in interface:
+        interfaces = controlplane.etherchannel_parse(service, interface, hostname)
+    else: 
+        interfaces = []
+        interfaces.append(interface)
+    cts = []
+    for i in interfaces:
+        if not any(x  in i for x in intmatch):
+            cmd = "show cts interface {} | i Propagate|Peer|CTS".format(i)
+            op = radkit_cli.get_any_single_output(hostname,cmd, service)
+
+            for line in op.splitlines():
+                    if not any(x  in line for x in matches):
+                            if "CTS" in line:
+                                    if "disabled" in line:
+                                            mode = "DISABLED"
+                                    if "enabled" in line:
+                                            mode = re.compile("(?<=mode:).*").search(line).group().strip()
+                            if "Peer SGT:" in line:
+                                    sgt = re.compile("\d+").search(line).group().strip()
+                            if "assignment:" in line:
+                                    trust = re.compile("(?<=ment:).*").search(line).group().strip()
+                            if "Propagate" in line:
+                                    if "Enabled" in line:
+                                        propagate = True
+            ctsd = {
+                'Mode' : mode,
+                'Port SGT' : sgt,
+                'Trust' : trust, 
+                'Propagation' : propagate
+            }
+
+            cts.append(ctsd)
+    return (cts)  
+    
 class cts_info:
 
     def __init__(self, srcep, dstep, device):
@@ -94,9 +140,7 @@ class cts_info:
         self.counters = None 
         self.aclname = None
         self.aces = None
-        self.propagation = False
-        self.trusting = None
-        self.trustsgt = None
+        self.ctsinterfaces = None
         self.devicesgt = None
         self.dstep = dstep
 
@@ -192,6 +236,8 @@ class cts_info:
         counters = ctscounters(self.srcsgtnum,self.dstsgtnum, self.defaultrule, service, self.hostname)
         self.counters = counters
         
+        self.ctsinterfaces = ctsinterface(self.dstep.sourceport,service,self.hostname)
+
 class cts_test:
 
     def __init__(self, device):

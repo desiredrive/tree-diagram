@@ -46,7 +46,7 @@ def initial_setup():
     #Profiling device where the Source is Located
     print ("Profiling device where the Source is located...\n")
     xtr = device_profiler.device(device_source_ip)
-    xtr.profile_device(service)
+    xtr.profile_device(service)  
     print (pformat(vars(xtr), indent=4, width =1, sort_dicts=False))
 
     #Gathering information about the source...

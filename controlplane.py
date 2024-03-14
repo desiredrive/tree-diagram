@@ -10,7 +10,6 @@ import radkit_cli
 def etherchannel_parse(service, intf, device):
 
     #Returns physical interfaces ONLY in UP state
-    matches = ["#", "show"]
     ponumb = re.compile( "\d+" ).search(intf).group().strip()
     #L2 Definition:
     po_cmd = "show etherchannel {} port | i Port:".format(ponumb)

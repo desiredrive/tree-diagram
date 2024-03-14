@@ -60,7 +60,30 @@ def rbaclparser(aclop):
                 aces.append(line)
     return (aces)
 
-                
+def ctscounters(ssgt, dsgt, default_flag,service,hostname):
+    matches = ["#", "show"]
+    if default_flag == False:
+        cmd = "show cts role-based counters from {} to {} | ex From|Role".format(ssgt,dsgt)
+    if default_flag == True:
+        cmd = "show cts role-based counters default | ex From|Role"
+    op = radkit_cli.get_any_single_output(hostname,cmd,service)
+    for line in op.splitlines():
+        if not any(x  in line for x in matches):
+            if line != '':
+                counters = re.split ("\s+", line)
+                break
+    countersd = {}
+    countersd[0] = {'From' : counters[0]}
+    countersd[1] = {'To' : counters[1]}
+    countersd[2] = {'SW Denied' : counters[2]}
+    countersd[3] = {'HW Denied' : counters[3]}
+    countersd[4] = {'SW Permit' : counters[4]}
+    countersd[5] = {'HW Permit' : counters[5]}
+    countersd[6] = {'SW Monitor' : counters[6]}
+    countersd[7] = {'HW Monitor' : counters[7]}
+
+    return (countersd)
+
 class cts_info:
 
     def __init__(self, srcep, dstep, device):
@@ -154,6 +177,7 @@ class cts_info:
                 self.aces = aces
         else:
             self.specificrule = True
+            self.defaultrule = False 
             if dynstate == True:
                 rbaclcmd = "show cts rbacl \"{}\" | se ACEs".format(aclname)
                 rbaclop = radkit_cli.get_any_single_output(self.hostname, rbaclcmd,service)
@@ -165,11 +189,9 @@ class cts_info:
             self.aclname = aclname
             self.aces = aces           
 
-
+        counters = ctscounters(self.srcsgtnum,self.dstsgtnum, self.defaultrule, service, self.hostname)
+        self.counters = counters
         
-        #cmd5 = 'show cts role-based counters default'
-        #cmd6 = 'show cts role-based counters from {} to {} | ex From|Role'
-
 class cts_test:
 
     def __init__(self, device):

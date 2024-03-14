@@ -56,7 +56,7 @@ class endpoint_info:
                 self.ipdtmethod = re.compile(".*(?= \d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3})").search(line).group().strip()
            
         if self.sourcemac==None:
-            sys.exit("No IPDT Entry for this host!")
+            sys.exit("No IPDT Entry for host {} !".format(self.sourceip))
 
 
         #Retrieve Anycast GW Information

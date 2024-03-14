@@ -177,10 +177,14 @@ def l2_east_west(srcdevice, sourceep, dstmac, rloc, dstip, rmtdevice, service):
     hwdenies = ctscounters['HW Denied']
     swdenies = ctscounters['SW Denied']
     
-    if int(hwdenies) != 0:
-        print ("Warning!!, A total of {} HW deny counters found for traffic between {} and {} in device: {} , RBACL is : {}, evaluate if this impacts your traffic".format(hwdenies, sourceep.sourceip, dstip, dxtr.hostname, ctsstate.aclname))
-    if int(swdenies) != 0:
-        print ("Warning!!, A total of {} SW deny counters found for traffic between {} and {} in device: {} , RBACL is : {}, evaluate if this impacts your traffic".format(swdenies, sourceep.sourceip, dstip, dxtr.hostname, ctsstate.aclname))
+    if ctsstate.globalenforcement==True and ctsstate.vlanenforcement==True:
+        if int(hwdenies) != 0:
+            print ("Warning!!, A total of {} HW deny counters found for traffic between {} and {} in device: {} , RBACL is : {}, evaluate if this impacts your traffic".format(hwdenies, sourceep.sourceip, dstip, dxtr.hostname, ctsstate.aclname))
+        if int(swdenies) != 0:
+            print ("Warning!!, A total of {} SW deny counters found for traffic between {} and {} in device: {} , RBACL is : {}, evaluate if this impacts your traffic".format(swdenies, sourceep.sourceip, dstip, dxtr.hostname, ctsstate.aclname))
+    else:
+        print ("CTS Global Enforcement is : ")
+        print ("CTS VLAN {} Enforcement is : ".format(destep.sourcevlan))
 
 
 def switchingflow(epinfo, dstip, service, l2cps):
